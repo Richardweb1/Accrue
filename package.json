@@ -1,0 +1,47 @@
+{
+  "name": "accrue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "test:contracts": "forge test -vvv",
+    "deploy:local": "forge script contracts/script/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 --broadcast",
+    "deploy:arc": "forge script contracts/script/DeployArc.s.sol --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --broadcast"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
+    "@rainbow-me/rainbowkit": "^2.2.8",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@tanstack/react-query": "^5.84.1",
+    "@x402/core": "^2.20.0",
+    "@x402/evm": "^2.20.0",
+    "@x402/svm": "^2.20.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "^15.4.5",
+    "pino-pretty": "^13.1.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.61.1",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.1.11",
+    "viem": "^2.33.3",
+    "wagmi": "^2.16.0",
+    "zod": "^4.0.14"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "ds-test": "github:dapphub/ds-test",
+    "forge-std": "github:foundry-rs/forge-std",
+    "typescript": "^5.9.2"
+  }
+}

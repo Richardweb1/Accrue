@@ -1,0 +1,16 @@
+node_modules/
+.tools/
+.next/
+out/
+dist/
+coverage/
+cache/
+contracts/out/
+contracts/cache/
+broadcast/
+*.tsbuildinfo
+dev-server.log
+.env
+.env.local
+.env.*.local
+!.env.example
