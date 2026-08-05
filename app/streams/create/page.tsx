@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { isAddress } from "viem";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useStreamActions } from "@/hooks/use-stream-actions";
+import { useUsdcAccount } from "@/hooks/use-usdc";
 import { formatUsdc, parseUsdc, rateToPerSecond } from "@/lib/format";
+import { analyzeBudget, secondsForUnit } from "@/lib/plans/calculations";
+import { encodePlanDraft, type PlanDraft } from "@/lib/plans/draft";
+import type { DisplayRateUnit } from "@/types/plan";
 
 const units = ["second", "minute", "hour", "day", "week"];
 
@@ -18,23 +22,49 @@ export default function CreateStreamPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [step, setStep] = useState(1);
-  const actions = useStreamActions();
+  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
+  const usdc = useUsdcAccount();
 
   const rate = useMemo(() => rateToPerSecond(amount, unit), [amount, unit]);
   const deposit = useMemo(() => parseUsdc(budget), [budget]);
-  const valid = isAddress(receiver) && rate > 0n && deposit > 0n;
+  const startSeconds = startMode === "now" ? Math.floor(Date.now() / 1000) : Math.floor(new Date(startDate).getTime() / 1000);
+  const endSeconds = endDate ? Math.floor(new Date(endDate).getTime() / 1000) : undefined;
+  const scheduleValid = Number.isFinite(startSeconds) && (!endSeconds || endSeconds > startSeconds);
+  const budgetAnalysis = useMemo(() => analyzeBudget({
+    walletBalance: usdc.balance,
+    activeCommitments: 0n,
+    newCommitment: deposit,
+    ratePerSecond: rate,
+    startTime: Number.isFinite(startSeconds) ? startSeconds : Math.floor(Date.now() / 1000),
+    endTime: endSeconds
+  }), [deposit, endSeconds, rate, startSeconds, usdc.balance]);
+  const valid = isAddress(receiver) && rate > 0n && deposit > 0n && scheduleValid && budgetAnalysis.canCreate;
 
   async function submit() {
     try {
       if (!valid) throw new Error("Check receiver, rate, and budget.");
-      const start = startMode === "now" ? BigInt(Math.floor(Date.now() / 1000)) : BigInt(Math.floor(new Date(startDate).getTime() / 1000));
-      const end = endDate ? BigInt(Math.floor(new Date(endDate).getTime() / 1000)) : 0n;
-      await actions.approve(deposit);
-      toast.success("Approval submitted");
-      await actions.createStream(receiver as `0x${string}`, deposit, rate, start, end);
-      toast.success("Stream transaction submitted");
+      setSubmitting(true);
+      const reviewUnit: DisplayRateUnit = unit === "second" ? "minute" : unit === "minute" || unit === "hour" || unit === "day" || unit === "week" ? unit : "day";
+      const reviewRateAmount = unit === "second" ? formatUsdc(rate * secondsForUnit(reviewUnit)) : amount;
+      const draft: PlanDraft = {
+        source: "manual",
+        planType: "custom",
+        title: "Custom Payment Plan",
+        description: "Manual Accrue Plan",
+        explanation: "This Plan covers the currently funded period.",
+        receiver: receiver as `0x${string}`,
+        totalAmount: budget,
+        displayRateAmount: reviewRateAmount,
+        displayRateUnit: reviewUnit,
+        startTime: startSeconds,
+        endTime: endSeconds,
+        reserveAmount: "0"
+      };
+      router.push(`/plans/review?draft=${encodePlanDraft(draft)}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Transaction failed");
+      setSubmitting(false);
     }
   }
 
@@ -49,8 +79,8 @@ export default function CreateStreamPage() {
         {step === 1 && <Step title="Receiver"><Label text="Receiver wallet address" /><Input value={receiver} onChange={setReceiver} placeholder="0x..." /><Label text="Optional stream name" /><Input value="" onChange={() => undefined} placeholder="Freelancer Stream" /></Step>}
         {step === 2 && <Step title="Payment rate"><Label text="Amount" /><Input value={amount} onChange={setAmount} /><Label text="Unit" /><select className="mt-2 w-full rounded-lg border border-[#dfe7e1] bg-white p-3" value={unit} onChange={(e) => setUnit(e.target.value)}>{units.map((u) => <option key={u}>{u}</option>)}</select><p className="mt-3 text-sm text-[#66736d]">Contract rate: {rate.toString()} micro-USDC per second. Minimum supported rate is 0.000001 USDC per second after conversion.</p></Step>}
         {step === 3 && <Step title="Duration and budget"><Label text="Maximum total USDC" /><Input value={budget} onChange={setBudget} /><Label text="Start" /><select className="mt-2 w-full rounded-lg border border-[#dfe7e1] bg-white p-3" value={startMode} onChange={(e) => setStartMode(e.target.value)}><option value="now">Start now</option><option value="scheduled">Scheduled start</option></select>{startMode === "scheduled" && <><Label text="Start date" /><Input value={startDate} onChange={setStartDate} type="datetime-local" /></>}<Label text="Optional end date" /><Input value={endDate} onChange={setEndDate} type="datetime-local" /></Step>}
-        {step === 4 && <Step title="Review"><Review label="Receiver" value={receiver || "-"} /><Review label="Rate" value={`${amount} USDC / ${unit}`} /><Review label="Per second" value={`${rate.toString()} micro-USDC`} /><Review label="Maximum spend" value={`${formatUsdc(deposit)} USDC`} /><Review label="Approval" value="Exact amount only" /></Step>}
-        {step === 5 && <Step title="Transactions"><p className="text-[#66736d]">Submit approval, wait for wallet confirmation, then create and fund the stream.</p><button disabled={!valid || actions.isPending} onClick={submit} className="btn btn-primary mt-5 w-full">{actions.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve and Create</button>{actions.hash && <p className="mt-3 break-all text-sm text-[#66736d]">Latest transaction: {actions.hash}</p>}</Step>}
+        {step === 4 && <Step title="Review"><Review label="Receiver" value={receiver || "-"} /><Review label="Wallet USDC" value={`${formatUsdc(usdc.balance)} USDC`} /><Review label="Rate" value={`${amount} USDC / ${unit}`} /><Review label="Per second" value={`${rate.toString()} micro-USDC`} /><Review label="Maximum spend" value={`${formatUsdc(deposit)} USDC`} /><Review label="Monthly estimate" value={`${formatUsdc(budgetAnalysis.estimatedMonthlyOutflow)} USDC`} /><Review label="Remaining after funding" value={`${formatUsdc(budgetAnalysis.remainingFreeBalance)} USDC`} /><Review label="Approval" value="Exact amount only" />{budgetAnalysis.warnings.map((warning) => <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]" key={warning.code}>{warning.message}</p>)}{!scheduleValid && <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]">The selected end date must be later than the start date.</p>}</Step>}
+        {step === 5 && <Step title="Plan review"><p className="text-[#66736d]">Review the Plan impact first. Approval and stream creation happen only after you confirm on the review page.</p><button disabled={!valid || submitting} onClick={submit} className="btn btn-primary mt-5 w-full">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Review Plan</button></Step>}
       </section>
       <div className="mt-5 flex justify-between">
         <button className="btn btn-secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>Back</button>

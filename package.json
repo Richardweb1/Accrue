@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test:unit": "tsx --test tests/**/*.test.ts",
     "lint": "next lint",
     "test:contracts": "forge test -vvv",
     "deploy:local": "forge script contracts/script/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 --broadcast",
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19.1.7",
     "ds-test": "github:dapphub/ds-test",
     "forge-std": "github:foundry-rs/forge-std",
+    "tsx": "^4.23.5",
     "typescript": "^5.9.2"
   }
 }

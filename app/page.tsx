@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { ArrowRight, Clock, Gauge, PauseCircle, ShieldCheck } from "lucide-react";
+import { PlannerBox } from "@/components/planner-box";
+import { TemplateCards } from "@/components/template-cards";
 
 export default function Home() {
   return (
     <main>
       <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
-          <p className="text-sm font-black uppercase text-[#107c5c]">Programmable USDC flows for continuous work.</p>
-          <h1 className="mt-5 max-w-3xl text-5xl font-black leading-tight sm:text-6xl">Money that moves as value happens.</h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-[#506058]">Create programmable USDC streams for continuous work, grants, services, and community rewards on Arc.</p>
+          <p className="text-sm font-black uppercase text-[#107c5c]">The AI assistant for programmable everyday payments.</p>
+          <h1 className="mt-5 max-w-3xl text-5xl font-black leading-tight sm:text-6xl">Describe the goal. Accrue programs the flow.</h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-[#506058]">Create safe, programmable USDC payment Plans for family support, everyday work, savings goals, allowances, and services on Arc.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/streams/create" className="btn btn-primary">Create a Stream <ArrowRight className="h-4 w-4" /></Link>
-            <Link href="/dashboard" className="btn btn-secondary">View Demo</Link>
+            <a href="#planner" className="btn btn-primary">Plan a Payment <ArrowRight className="h-4 w-4" /></a>
+            <Link href="/streams/create" className="btn btn-secondary">Create Manually</Link>
           </div>
         </div>
         <div className="panel p-6 shadow-sm">
@@ -23,6 +25,10 @@ export default function Home() {
             <div className="mt-6 h-2 rounded-full bg-[#e7eee9]"><div className="h-2 w-2/3 rounded-full bg-[#107c5c]" /></div>
           </div>
         </div>
+      </section>
+      <section id="planner" className="mx-auto max-w-6xl px-4 pb-14">
+        <PlannerBox />
+        <TemplateCards />
       </section>
       <section className="border-y border-[#dfe7e1] bg-white/60 py-14">
         <div className="mx-auto grid max-w-6xl gap-4 px-4 md:grid-cols-4">
