@@ -62,10 +62,10 @@ export function PlannerBox() {
   }
 
   return (
-    <div className="panel p-5">
-      <label className="text-sm font-black text-[#107c5c]">What do you want your money to do?</label>
+    <div className="panel float-in p-5">
+      <label className="text-sm font-black uppercase text-[#126b7c]">What do you want your money to do?</label>
       <textarea
-        className="mt-3 min-h-32 w-full rounded-lg border border-[#dfe7e1] bg-white p-4 text-lg outline-[#107c5c]"
+        className="mt-3 min-h-32 w-full rounded-lg border border-[#cfe7f1] bg-white/85 p-4 text-lg text-[#061d3a] shadow-inner outline-[#45d8c5]"
         value={prompt}
         onChange={(event) => setPrompt(event.target.value)}
         placeholder="Support my mother with 100 USDC over the next month."
@@ -79,17 +79,17 @@ export function PlannerBox() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {examples.map((example) => (
-          <button className="rounded-full border border-[#dfe7e1] bg-white px-3 py-2 text-sm text-[#506058]" key={example} onClick={() => setPrompt(example)}>
+          <button className="min-h-11 rounded-full border border-[#cfe7f1] bg-white/70 px-3 py-2 text-sm text-[#445975] transition hover:-translate-y-0.5 hover:border-[#45d8c5]" key={example} onClick={() => setPrompt(example)}>
             {example}
           </button>
         ))}
       </div>
       {response && (
-        <div className="mt-5 rounded-lg border border-[#dfe7e1] bg-[#fbfdfb] p-4">
+        <div className="mt-5 rounded-lg border border-[#cfe7f1] bg-[#f7fdff] p-4">
           <p className="font-black">{response.status === "ready" ? "Plan draft ready" : "More information needed"}</p>
-          <p className="mt-2 text-sm text-[#66736d]">{response.message}</p>
+          <p className="mt-2 text-sm text-[#5f6f89]">{response.message}</p>
           {response.missingFields.length > 0 && <p className="mt-3 text-sm font-bold text-[#8a5a00]">Missing: {response.missingFields.join(", ")}</p>}
-          <p className="mt-3 text-sm text-[#506058]">{response.explanation}</p>
+          <p className="mt-3 text-sm text-[#445975]">{response.explanation}</p>
           {(response.status === "ready" || response.status === "needs_input") && <button className="btn btn-primary mt-4" onClick={reviewDraft}>{response.status === "ready" ? "Review Plan" : "Continue in guided form"}</button>}
         </div>
       )}
