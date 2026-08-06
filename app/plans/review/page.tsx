@@ -54,7 +54,7 @@ function PlanReviewContent() {
     .reduce((sum, stream) => sum + stream.refundable, 0n);
 
   const params = plan ? planToContractParams(plan) : undefined;
-  const analysis = plan ? validatePlanReview(plan, usdc.balance, activeCommitments) : undefined;
+  const analysis = plan ? validatePlanReview(plan, usdc.balance, activeCommitments, address) : undefined;
   const wrongNetwork = chainId !== ARC_CHAIN_ID;
   const canSubmit = Boolean(plan && params && analysis?.canCreate && address && !wrongNetwork && usdc.balance >= params.depositAmount && progress === "idle");
   const agentInsight = plan && analysis ? runPlanSafetyAgent(plan, analysis) : undefined;
@@ -66,12 +66,15 @@ function PlanReviewContent() {
       if (chainId !== ARC_CHAIN_ID) throw new Error("Switch your wallet to Arc Testnet.");
       if (usdc.balance < params.depositAmount) throw new Error("Insufficient USDC balance for this Plan.");
       if (!analysis?.canCreate) throw new Error("Resolve blocking Plan warnings first.");
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      const startTime = params.startTime <= now ? now + 30n : params.startTime;
+      if (params.endTime > 0n && params.endTime <= startTime) throw new Error("The Plan end date is too close. Pick a later end date.");
       if (needsApproval(params.depositAmount, usdc.allowance)) {
         setProgress("approval");
         await actions.approveIfNeeded(params.depositAmount, usdc.allowance);
       }
       setProgress("stream");
-      const receipt = await actions.createStream(params.receiver, params.depositAmount, params.ratePerSecond, params.startTime, params.endTime);
+      const receipt = await actions.createStream(params.receiver, params.depositAmount, params.ratePerSecond, startTime, params.endTime);
       const streamId = extractStreamIdFromReceipt(receipt);
       setProgress("metadata");
       savePlanMetadata({

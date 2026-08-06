@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAddress } from "viem";
+import { useAccount } from "wagmi";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUsdcAccount } from "@/hooks/use-usdc";
@@ -15,6 +16,7 @@ const units = ["second", "minute", "hour", "day", "week"];
 
 export default function CreateStreamPage() {
   const [receiver, setReceiver] = useState("");
+  const [streamName, setStreamName] = useState("");
   const [amount, setAmount] = useState("2");
   const [unit, setUnit] = useState("hour");
   const [budget, setBudget] = useState("20");
@@ -24,6 +26,7 @@ export default function CreateStreamPage() {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const { address } = useAccount();
   const usdc = useUsdcAccount();
 
   const rate = useMemo(() => rateToPerSecond(amount, unit), [amount, unit]);
@@ -31,6 +34,7 @@ export default function CreateStreamPage() {
   const startSeconds = startMode === "now" ? Math.floor(Date.now() / 1000) : Math.floor(new Date(startDate).getTime() / 1000);
   const endSeconds = endDate ? Math.floor(new Date(endDate).getTime() / 1000) : undefined;
   const scheduleValid = Number.isFinite(startSeconds) && (!endSeconds || endSeconds > startSeconds);
+  const receiverIsSender = Boolean(address && isAddress(receiver) && receiver.toLowerCase() === address.toLowerCase());
   const budgetAnalysis = useMemo(() => analyzeBudget({
     walletBalance: usdc.balance,
     activeCommitments: 0n,
@@ -39,10 +43,11 @@ export default function CreateStreamPage() {
     startTime: Number.isFinite(startSeconds) ? startSeconds : Math.floor(Date.now() / 1000),
     endTime: endSeconds
   }), [deposit, endSeconds, rate, startSeconds, usdc.balance]);
-  const valid = isAddress(receiver) && rate > 0n && deposit > 0n && scheduleValid && budgetAnalysis.canCreate;
+  const valid = isAddress(receiver) && !receiverIsSender && rate > 0n && deposit > 0n && scheduleValid && budgetAnalysis.canCreate;
 
   async function submit() {
     try {
+      if (receiverIsSender) throw new Error("Receiver cannot be your connected wallet. Use another wallet address.");
       if (!valid) throw new Error("Check receiver, rate, and budget.");
       setSubmitting(true);
       const reviewUnit: DisplayRateUnit = unit === "second" ? "minute" : unit === "minute" || unit === "hour" || unit === "day" || unit === "week" ? unit : "day";
@@ -50,8 +55,8 @@ export default function CreateStreamPage() {
       const draft: PlanDraft = {
         source: "manual",
         planType: "custom",
-        title: "Custom Payment Plan",
-        description: "Manual Accrue Plan",
+        title: streamName.trim() || "Custom Payment Plan",
+        description: streamName.trim() ? `Manual stream: ${streamName.trim()}` : "Manual Accrue Plan",
         explanation: "This Plan covers the currently funded period.",
         receiver: receiver as `0x${string}`,
         totalAmount: budget,
@@ -76,10 +81,10 @@ export default function CreateStreamPage() {
         {[1, 2, 3, 4, 5].map((item) => <button key={item} onClick={() => setStep(item)} className={`h-2 rounded-full ${step >= item ? "bg-[#107c5c]" : "bg-[#dfe7e1]"}`} aria-label={`Step ${item}`} />)}
       </div>
       <section className="panel mt-6 p-5">
-        {step === 1 && <Step title="Receiver"><Label text="Receiver wallet address" /><Input value={receiver} onChange={setReceiver} placeholder="0x..." /><Label text="Optional stream name" /><Input value="" onChange={() => undefined} placeholder="Freelancer Stream" /></Step>}
+        {step === 1 && <Step title="Receiver"><Label text="Receiver wallet address" /><Input value={receiver} onChange={setReceiver} placeholder="0x..." />{receiverIsSender && <p className="mt-3 rounded-lg border border-[#efaaa3] bg-[#fff1ef] p-3 text-sm text-[#8a1f13]">Receiver cannot be your connected wallet. Use a second wallet address.</p>}<Label text="Optional stream name" /><Input value={streamName} onChange={setStreamName} placeholder="Freelancer Stream" /></Step>}
         {step === 2 && <Step title="Payment rate"><Label text="Amount" /><Input value={amount} onChange={setAmount} /><Label text="Unit" /><select className="mt-2 w-full rounded-lg border border-[#dfe7e1] bg-white p-3" value={unit} onChange={(e) => setUnit(e.target.value)}>{units.map((u) => <option key={u}>{u}</option>)}</select><p className="mt-3 text-sm text-[#66736d]">Contract rate: {rate.toString()} micro-USDC per second. Minimum supported rate is 0.000001 USDC per second after conversion.</p></Step>}
         {step === 3 && <Step title="Duration and budget"><Label text="Maximum total USDC" /><Input value={budget} onChange={setBudget} /><Label text="Start" /><select className="mt-2 w-full rounded-lg border border-[#dfe7e1] bg-white p-3" value={startMode} onChange={(e) => setStartMode(e.target.value)}><option value="now">Start now</option><option value="scheduled">Scheduled start</option></select>{startMode === "scheduled" && <><Label text="Start date" /><Input value={startDate} onChange={setStartDate} type="datetime-local" /></>}<Label text="Optional end date" /><Input value={endDate} onChange={setEndDate} type="datetime-local" /></Step>}
-        {step === 4 && <Step title="Review"><Review label="Receiver" value={receiver || "-"} /><Review label="Wallet USDC" value={`${formatUsdc(usdc.balance)} USDC`} /><Review label="Rate" value={`${amount} USDC / ${unit}`} /><Review label="Per second" value={`${rate.toString()} micro-USDC`} /><Review label="Maximum spend" value={`${formatUsdc(deposit)} USDC`} /><Review label="Monthly estimate" value={`${formatUsdc(budgetAnalysis.estimatedMonthlyOutflow)} USDC`} /><Review label="Remaining after funding" value={`${formatUsdc(budgetAnalysis.remainingFreeBalance)} USDC`} /><Review label="Approval" value="Exact amount only" />{budgetAnalysis.warnings.map((warning) => <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]" key={warning.code}>{warning.message}</p>)}{!scheduleValid && <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]">The selected end date must be later than the start date.</p>}</Step>}
+        {step === 4 && <Step title="Review"><Review label="Name" value={streamName.trim() || "Custom Payment Plan"} /><Review label="Receiver" value={receiver || "-"} /><Review label="Wallet USDC" value={`${formatUsdc(usdc.balance)} USDC`} /><Review label="Rate" value={`${amount} USDC / ${unit}`} /><Review label="Per second" value={`${rate.toString()} micro-USDC`} /><Review label="Maximum spend" value={`${formatUsdc(deposit)} USDC`} /><Review label="Monthly estimate" value={`${formatUsdc(budgetAnalysis.estimatedMonthlyOutflow)} USDC`} /><Review label="Remaining after funding" value={`${formatUsdc(budgetAnalysis.remainingFreeBalance)} USDC`} /><Review label="Approval" value="Exact amount only" />{receiverIsSender && <p className="mt-3 rounded-lg border border-[#efaaa3] bg-[#fff1ef] p-3 text-sm text-[#8a1f13]">Receiver cannot be your connected wallet. Use a second wallet address.</p>}{budgetAnalysis.warnings.map((warning) => <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]" key={warning.code}>{warning.message}</p>)}{!scheduleValid && <p className="mt-3 rounded-lg border border-[#f0d18a] bg-[#fff8e6] p-3 text-sm text-[#725000]">The selected end date must be later than the start date.</p>}</Step>}
         {step === 5 && <Step title="Plan review"><p className="text-[#66736d]">Review the Plan impact first. Approval and stream creation happen only after you confirm on the review page.</p><button disabled={!valid || submitting} onClick={submit} className="btn btn-primary mt-5 w-full">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Review Plan</button></Step>}
       </section>
       <div className="mt-5 flex justify-between">

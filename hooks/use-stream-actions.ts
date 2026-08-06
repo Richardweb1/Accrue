@@ -3,7 +3,7 @@
 import { useWriteContract, useWaitForTransactionReceipt, useAccount, usePublicClient } from "wagmi";
 import { toast } from "sonner";
 import { accrueAbi, erc20Abi } from "@/lib/abi";
-import { ACCRUE_CONTRACT_ADDRESS, USDC_ADDRESS } from "@/lib/env";
+import { ACCRUE_CONTRACT_ADDRESS, ARC_CHAIN_ID, USDC_ADDRESS } from "@/lib/env";
 
 export function useStreamActions() {
   const { address } = useAccount();
@@ -13,26 +13,27 @@ export function useStreamActions() {
 
   async function waitFor(hashToWaitFor: `0x${string}`) {
     if (!publicClient) throw new Error("RPC client is not ready");
-    return publicClient.waitForTransactionReceipt({ hash: hashToWaitFor });
+    return publicClient.waitForTransactionReceipt({ hash: hashToWaitFor, pollingInterval: 1_000, timeout: 120_000 });
   }
 
   async function approve(amount: bigint) {
     if (!ACCRUE_CONTRACT_ADDRESS) throw new Error("Missing Accrue contract address");
+    if (!address) throw new Error("Connect your wallet first.");
     toast.info("Approving exact USDC amount");
     const approvalHash = await writeContractAsync({
       address: USDC_ADDRESS,
       abi: erc20Abi,
       functionName: "approve",
-      args: [ACCRUE_CONTRACT_ADDRESS, amount]
+      args: [ACCRUE_CONTRACT_ADDRESS, amount],
+      account: address,
+      chainId: ARC_CHAIN_ID
     });
-    await waitFor(approvalHash);
-    return approvalHash;
+    return waitFor(approvalHash);
   }
 
   async function approveIfNeeded(amount: bigint, allowance: bigint) {
     if (allowance >= amount) return undefined;
-    const approvalHash = await approve(amount);
-    return waitFor(approvalHash);
+    return approve(amount);
   }
 
   async function createStream(receiver: `0x${string}`, deposit: bigint, rate: bigint, start: bigint, end: bigint) {
@@ -43,7 +44,8 @@ export function useStreamActions() {
       abi: accrueAbi,
       functionName: "createStream",
       args: [receiver, deposit, rate, start, end],
-      account: address
+      account: address,
+      chainId: ARC_CHAIN_ID
     });
     return waitFor(streamHash);
   }

@@ -2,7 +2,7 @@ import { isAddress } from "viem";
 import { ARC_CHAIN_ID, ACCRUE_CONTRACT_ADDRESS } from "@/lib/env";
 import { formatUsdc } from "@/lib/format";
 import { analyzeBudget, calculateEndTime, validatePlanForStream } from "@/lib/plans/calculations";
-import type { AccruePlan, BudgetAnalysis } from "@/types/plan";
+import type { AccruePlan, BudgetAnalysis, BudgetWarning } from "@/types/plan";
 
 export type PlanContractParams = {
   receiver: `0x${string}`;
@@ -37,7 +37,7 @@ export function planToContractParams(plan: AccruePlan): PlanContractParams {
   };
 }
 
-export function validatePlanReview(plan: AccruePlan, walletBalance: bigint, activeCommitments: bigint): BudgetAnalysis {
+export function validatePlanReview(plan: AccruePlan, walletBalance: bigint, activeCommitments: bigint, sender?: `0x${string}`): BudgetAnalysis {
   const params = planToContractParams(plan);
   const analysis = analyzeBudget({
     walletBalance,
@@ -49,10 +49,17 @@ export function validatePlanReview(plan: AccruePlan, walletBalance: bigint, acti
     endTime: params.endTime > 0n ? Number(params.endTime) : undefined
   });
   const streamWarnings = validatePlanForStream(plan);
+  const senderWarnings: BudgetWarning[] = sender && params.receiver.toLowerCase() === sender.toLowerCase()
+    ? [{
+        code: "self_receiver",
+        severity: "blocking" as const,
+        message: "Receiver cannot be your connected wallet. Use another wallet address."
+      }]
+    : [];
   return {
     ...analysis,
-    warnings: [...streamWarnings, ...analysis.warnings],
-    canCreate: analysis.canCreate && streamWarnings.every((warning) => warning.severity !== "blocking")
+    warnings: [...streamWarnings, ...senderWarnings, ...analysis.warnings],
+    canCreate: analysis.canCreate && [...streamWarnings, ...senderWarnings].every((warning) => warning.severity !== "blocking")
   };
 }
 

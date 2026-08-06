@@ -46,7 +46,8 @@ export type BudgetWarning = {
     | "existing_commitments"
     | "long_term"
     | "small_rate"
-    | "invalid_schedule";
+    | "invalid_schedule"
+    | "self_receiver";
   severity: "info" | "warning" | "blocking";
   message: string;
 };

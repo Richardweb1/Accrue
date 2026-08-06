@@ -61,6 +61,13 @@ test("detects reserve warning", () => {
   assert.equal(analysis.warnings.some((warning) => warning.code === "low_reserve"), true);
 });
 
+test("blocks using the sender wallet as receiver", () => {
+  const plan = draftToAccruePlan(sampleDraft());
+  const analysis = validatePlanReview(plan, parseUnits("12", 6), 0n, plan.receiver);
+  assert.equal(analysis.canCreate, false);
+  assert.equal(analysis.warnings.some((warning) => warning.code === "self_receiver"), true);
+});
+
 test("approval decision skips sufficient allowance", () => {
   assert.equal(needsApproval(10n, 10n), false);
 });
