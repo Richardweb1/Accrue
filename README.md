@@ -2,6 +2,8 @@
 
 Programmable USDC flows for continuous work on Circle Arc.
 
+Live demo: https://accrue-web1.vercel.app
+
 Accrue lets a sender deposit USDC into a smart contract and stream value to one receiver over time. The contract accrues balances from timestamps. The frontend shows a live estimate, and actual USDC transfers happen only on claim, cancellation, or settlement actions.
 
 ## Official Arc Configuration
