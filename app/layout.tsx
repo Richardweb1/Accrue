@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="hidden items-center gap-5 text-sm font-semibold text-[#445975] sm:flex">
               <Link href="/dashboard">Dashboard</Link>
               <Link href="/streams">Streams</Link>
+              <Link href="/send">Send</Link>
               <Link href="/activity">Activity</Link>
             </nav>
             <WalletButton />

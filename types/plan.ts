@@ -63,3 +63,25 @@ export type BudgetAnalysis = {
   warnings: BudgetWarning[];
   canCreate: boolean;
 };
+
+export type RecentRecipient = {
+  owner: `0x${string}`;
+  address: `0x${string}`;
+  lastSentAt: number;
+};
+
+export type AISendConfirmation = {
+  summary: string;
+  riskFlag: "none" | "first_time_address" | "large_amount";
+  riskNote: string;
+};
+
+export type InstantSendActivity = {
+  id: string;
+  owner: `0x${string}`;
+  recipient: `0x${string}`;
+  amount: string;
+  memo?: string;
+  hash: `0x${string}`;
+  createdAt: number;
+};
