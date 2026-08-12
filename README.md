@@ -69,9 +69,12 @@ Fill these before Arc testnet deployment:
 DEPLOYER_PRIVATE_KEY=
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
 NEXT_PUBLIC_ACCRUE_CONTRACT_ADDRESS=
+OPENROUTER_API_KEY=
 ```
 
 Never commit private keys.
+
+`OPENROUTER_API_KEY` powers the server-side Instant Send AI confirmation route. Create it at https://openrouter.ai/keys and set `OPENROUTER_MODEL` only if you want to override the default model slug.
 
 ## Contract Commands
 
