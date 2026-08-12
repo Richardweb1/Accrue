@@ -14,10 +14,12 @@ export default function Home() {
           </div>
           <h1 className="mt-5 max-w-3xl text-5xl font-black leading-tight text-[#061d3a] sm:text-6xl">Describe the goal. Accrue programs the flow.</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[#445975]">A warm, AI-assisted way to create programmable USDC payment Plans for family support, everyday work, savings goals, allowances, and creator support on Arc.</p>
+          <p className="mt-3 max-w-2xl text-base font-bold text-[#126b7c]">Stream USDC gradually, or send it instantly - both in one place.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a href="#planner" className="btn btn-primary">Plan a Payment <ArrowRight className="h-4 w-4" /></a>
-            <Link href="/streams/create" className="btn btn-secondary">Create Manually</Link>
+            <Link href="/send" className="btn btn-secondary">Send Now</Link>
           </div>
+          <a className="mt-4 inline-flex text-sm font-bold text-[#126b7c] underline underline-offset-4" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Need testnet USDC? Get some from the faucet -&gt;</a>
         </div>
         <div className="hero-card panel soft-pulse p-6">
           <div className="relative z-10">
@@ -45,6 +47,33 @@ export default function Home() {
         <PlannerBox />
         <TemplateCards />
       </section>
+      <section className="mx-auto max-w-6xl px-4 pb-14">
+        <div className="grid gap-4 md:grid-cols-2">
+          <FlowCard
+            title="Streams"
+            items={[
+              "Money moves gradually over time.",
+              "Good for allowances, freelancer pay, donations, and support.",
+              "Pause, resume, add funds, or cancel.",
+              "AI drafts the plan from your description."
+            ]}
+            href="#planner"
+            cta="Plan a Payment"
+            primary
+          />
+          <FlowCard
+            title="Instant Send"
+            items={[
+              "Money moves right now, once.",
+              "Good for quick transfers and paying someone back.",
+              "Final once signed, with no schedule to manage.",
+              "AI reviews the transfer before you sign."
+            ]}
+            href="/send"
+            cta="Send Now"
+          />
+        </div>
+      </section>
       <section className="border-y border-[#cfe7f1] bg-white/45 py-14">
         <div className="mx-auto grid max-w-6xl gap-4 px-4 md:grid-cols-4">
           {[
@@ -70,6 +99,19 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+function FlowCard({ title, items, href, cta, primary }: { title: string; items: string[]; href: string; cta: string; primary?: boolean }) {
+  const buttonClass = primary ? "btn btn-primary mt-5 w-full" : "btn btn-secondary mt-5 w-full";
+  return (
+    <div className="panel p-5">
+      <h2 className="text-2xl font-black text-[#061d3a]">{title}</h2>
+      <ul className="mt-4 space-y-3 text-sm leading-6 text-[#5f6f89]">
+        {items.map((item) => <li key={item}>- {item}</li>)}
+      </ul>
+      <Link href={href} className={buttonClass}>{cta}</Link>
+    </div>
   );
 }
 
