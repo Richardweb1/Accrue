@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount } from "wagmi";
-import { CheckCircle2, Loader2, Send } from "lucide-react";
+import { CheckCircle2, Loader2, Send, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useUsdcAccount } from "@/hooks/use-usdc";
 import { useInstantSend } from "@/hooks/useInstantSend";
@@ -155,11 +155,18 @@ export function SendForm() {
       </div>
 
       <aside className="panel p-5">
-        <h2 className="text-xl font-black">How it works</h2>
-        <div className="mt-4 space-y-3 text-sm leading-6 text-[#66736d]">
-          <p>Instant Send uses a direct USDC ERC-20 transfer on Arc Testnet.</p>
-          <p>The memo stays only in this browser. It is not written on-chain.</p>
-          <p>You will always review an AI or fallback summary before signing.</p>
+        <p className="text-sm font-black uppercase text-[#107c5c]">Send status</p>
+        <h2 className="mt-2 text-2xl font-black">{instantSend.state === "success" ? "Transfer complete" : "Ready for review"}</h2>
+        <div className="mt-5 grid gap-3">
+          <StatusRow label="Network" value="Arc Testnet" />
+          <StatusRow label="Asset" value="USDC" />
+          <StatusRow label="Recipient" value={validRecipient ? shortAddress(recipient) : "Waiting"} />
+          <StatusRow label="Amount" value={parsedAmount > 0n ? `${amount} USDC` : "Waiting"} />
+          <StatusRow label="Recent recipients" value={recent.length.toString()} />
+        </div>
+        <div className="mt-5 flex gap-3 rounded-lg border border-[#dfe7e1] bg-white/70 p-3 text-sm text-[#506058]">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#107c5c]" />
+          <p>Wallet signature is required. Accrue never moves funds without your confirmation.</p>
         </div>
         {instantSend.hash && (
           <a className="btn btn-secondary mt-5 w-full" href={`https://testnet.arcscan.app/tx/${instantSend.hash}`} target="_blank">View transaction</a>
@@ -172,6 +179,10 @@ export function SendForm() {
       <AIConfirmation open={confirmOpen} loading={confirmLoading} confirmation={confirmation} onCancel={() => setConfirmOpen(false)} onConfirm={confirmSend} busy={instantSend.state === "awaiting_signature" || instantSend.state === "pending"} />
     </section>
   );
+}
+
+function StatusRow({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between gap-4 border-b border-[#dfe7e1] py-3 text-sm"><span className="text-[#66736d]">{label}</span><span className="max-w-[55%] break-all text-right font-black">{value}</span></div>;
 }
 
 function Label({ text }: { text: string }) {
