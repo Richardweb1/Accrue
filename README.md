@@ -188,5 +188,4 @@ Not implemented yet:
 ## Links
 
 - Live app: https://accrue-web1.vercel.app
-- Instant Send: https://accrue-web1.vercel.app/send
-- Repository: https://github.com/Richardweb1/Accrue
+
