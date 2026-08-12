@@ -50,7 +50,7 @@ export function SendForm() {
     }
   }, [amount]);
   const validRecipient = isAddress(recipient);
-  const sentBefore = Boolean(address && validRecipient && recent.some((item) => item.address.toLowerCase() === recipient.toLowerCase()));
+  const sentBefore = Boolean(address && validRecipient && recent.some((item) => item.address && item.address.toLowerCase() === recipient.toLowerCase()));
   const balancePercent = usdc.balance > 0n ? Number((parsedAmount * 10_000n) / usdc.balance) / 100 : 0;
   const amountValid = parsedAmount > 0n && parsedAmount <= usdc.balance;
   const canReview = Boolean(address && validRecipient && amountValid);
