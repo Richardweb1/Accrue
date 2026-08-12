@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount } from "wagmi";
-import { Loader2, Send } from "lucide-react";
+import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useUsdcAccount } from "@/hooks/use-usdc";
 import { useInstantSend } from "@/hooks/useInstantSend";
@@ -36,6 +36,7 @@ export function SendForm() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmation, setConfirmation] = useState<AISendConfirmation>();
+  const [lastSent, setLastSent] = useState<{ recipient: `0x${string}`; amount: string; hash: `0x${string}` }>();
 
   useEffect(() => {
     setRecent(getRecentRecipients(address));
@@ -82,12 +83,16 @@ export function SendForm() {
 
   async function confirmSend() {
     if (!validRecipient || !address) return;
-    await instantSend.send(recipient as `0x${string}`, parsedAmount, amount, memo).then(() => {
+    const sentRecipient = recipient as `0x${string}`;
+    const sentAmount = amount;
+    await instantSend.send(sentRecipient, parsedAmount, sentAmount, memo).then(async (hash) => {
+      setLastSent({ recipient: sentRecipient, amount: sentAmount, hash });
       setRecipient("");
       setAmount("");
       setMemo("");
       setConfirmOpen(false);
       setRecent(getRecentRecipients(address));
+      await usdc.refetch();
     }).catch(() => undefined);
   }
 
@@ -106,6 +111,17 @@ export function SendForm() {
         </div>
 
         <div className="mt-6">
+          {lastSent && instantSend.state === "success" && (
+            <div className="mb-5 flex gap-3 rounded-lg border border-[#9fd9c2] bg-[#effcf6] p-4 text-sm text-[#0f684b]">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p className="font-black">Instant Send completed</p>
+                <p className="mt-1">Sent {lastSent.amount} USDC to {shortAddress(lastSent.recipient)}.</p>
+                <a className="mt-2 inline-flex font-bold underline" href={`https://testnet.arcscan.app/tx/${lastSent.hash}`} target="_blank">View on ArcScan</a>
+              </div>
+            </div>
+          )}
+
           <Label text="Recipient wallet address" />
           <Input value={recipient} onChange={setRecipient} placeholder="0x..." />
           {recipientError && <ErrorText text={recipientError} />}
@@ -132,8 +148,8 @@ export function SendForm() {
           {instantSend.error && <ErrorText text={instantSend.error} />}
 
           <button className="btn btn-primary mt-5 w-full" onClick={prepareConfirmation} disabled={!canReview || instantSend.state === "awaiting_signature" || instantSend.state === "pending"}>
-            <Send className="h-4 w-4" />
-            Review with AI
+            {instantSend.state === "awaiting_signature" || instantSend.state === "pending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {instantSend.state === "awaiting_signature" ? "Waiting for signature" : instantSend.state === "pending" ? "Confirming on Arc" : "Review with AI"}
           </button>
         </div>
       </div>
